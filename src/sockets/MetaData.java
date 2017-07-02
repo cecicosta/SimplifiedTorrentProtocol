@@ -8,13 +8,18 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.io.Serializable;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.Properties;
 
-public class MetaData {
+public class MetaData implements Serializable{
 	
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
 	public Properties properties;
 	public static final String QUANTIDADE_SEG = "QuantidadeSeg";
 	public static final String TAMANHO_SEG = "TamanhoCadaSeg";
@@ -27,35 +32,25 @@ public class MetaData {
 	public static final int TAM_SEG = 1024;
 	
 	public String nome;
-	private File file, torrentFile;
-	private MessageDigest calcHash;
 	
 	
 	
 	public MetaData() throws IOException {
 		properties = new Properties();
-		try {
-			calcHash = MessageDigest.getInstance("MD5");
-		} catch (NoSuchAlgorithmException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+
 	}
 
 	public void criaTorrent(String arquivo, String peers) throws NoSuchAlgorithmException, IOException{
 		
 		this.nome = arquivo;
-		this.file = new File(arquivo);
+		File file = new File(arquivo);
 		
 		this.fileSize = file.length();
 		this.qntSegmentos = (int) Math.ceil( ((double) fileSize)/TAM_SEG );
-		
-		this.torrentFile = new File(file.getAbsolutePath()+".trr"); //abre um filedescriptor
-		
-		//Checar se deseja substituir arquivo existente
-		//if(this.torrentFile.exists())
-		
-		RandomAccessFile fileReader = new RandomAccessFile(this.file, "r");
+
+		File torrentFile = new File(file.getAbsolutePath()+".trr"); //abre um filedescriptor
+				
+		RandomAccessFile fileReader = new RandomAccessFile(file, "r");
 		
 		properties.setProperty(NAME, this.nome);
 		properties.setProperty(ANNOUNCE, peers);
@@ -65,7 +60,7 @@ public class MetaData {
 		
 		calculaHashSegmentos(fileReader);
 		
-		BufferedOutputStream torrentWriter = new BufferedOutputStream(new FileOutputStream(this.torrentFile));
+		BufferedOutputStream torrentWriter = new BufferedOutputStream(new FileOutputStream(torrentFile));
 		
 		//grava os metadados no arquivo .torrent
 		properties.store(torrentWriter, null); //null seriam os comentários se houvesse
@@ -73,19 +68,16 @@ public class MetaData {
 	}
 	
 	public void carregaTorrent(String torrentPath) throws IOException, NoSuchAlgorithmException {
-		this.torrentFile = new File(torrentPath);
+		File torrentFile = new File(torrentPath);
 		
-		BufferedInputStream torrentReader = new BufferedInputStream(new FileInputStream(this.torrentFile));
+		BufferedInputStream torrentReader = new BufferedInputStream(new FileInputStream(torrentFile));
 
 			this.properties = new Properties();
 			this.properties.load(torrentReader);
 		
 		torrentReader.close();
 		
-		this.file = new File((String) this.properties.get(NAME));
-		
-		//verificaHashSegmentos(fileReader);
-		//SUGESTAO: se o arquivo existir, percorra cada peca, reclacule o hash e compare com o hash do properties.get(i), se bater vc já tem a peça 
+		this.nome = (String) properties.get(NAME);
 	}
 
 	private void calculaHashSegmentos(RandomAccessFile fileReader) throws NoSuchAlgorithmException, IOException {
@@ -102,17 +94,13 @@ public class MetaData {
 			//salva valor hash no arquivo metadados
 			properties.setProperty(String.valueOf(i), hash);
 			
-			//zera o hash pra estar limpo pra proximo segmento
-			calcHash.reset();
-			
 			System.out.println("[DEBUG] hash do segmento [" + (i+1) + "] = " + hash);
 		}
 	}
 	
 	public String calculaHash(byte[] segmento) throws NoSuchAlgorithmException, IOException {		
 		byte[] hashSegmento;
-		
-		
+		MessageDigest calcHash = MessageDigest.getInstance("MD5");
 		//calcula hash pro segmento
 		calcHash.update(segmento);
 		hashSegmento = calcHash.digest();

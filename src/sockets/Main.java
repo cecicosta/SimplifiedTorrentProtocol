@@ -22,10 +22,12 @@ public class Main {
 		
 		System.out.println("Escolha uma opção: \n"
 				+ "1) Criar um arquivo .trr\n"
-				+ "2) Carregar um arquivo .trr para download\n");
+				+ "2) Carregar um arquivo .trr para download\n"
+				+ "3) Atuar como servidor apenas \n");
 		String entrada = in.nextLine();
 		switch(Integer.parseInt(entrada)){
 		case 1:
+		{
 			try {
 				torrentData = criaTorrentNovo();
 			} catch (IOException e) {
@@ -33,7 +35,9 @@ public class Main {
 				e.printStackTrace();
 			}
 			break;
+		}
 		case 2:
+		{
 			try {
 				torrentData = carregaTorrentExistente();
 			} catch (IOException e) {
@@ -41,15 +45,6 @@ public class Main {
 				e.printStackTrace();
 			} 
 			
-			Thread threadServer = new Thread(new Runnable(){
-				@Override
-				public void run() {
-					Servidor servidor = new Servidor();
-					servidor.iniciarServidor();
-				}
-				
-			});
-			threadServer.start();
 			Thread threadClient = new Thread(new Runnable(){
 				@Override
 				public void run() {
@@ -59,6 +54,19 @@ public class Main {
 				
 			});
 			threadClient.start();
+		}
+		case 3:
+		{
+			Thread threadServer = new Thread(new Runnable(){
+				@Override
+				public void run() {
+					Servidor servidor = new Servidor();
+					servidor.iniciarServidor();
+				}
+				
+			});
+			threadServer.start();
+		}
 		}
 	}
 
